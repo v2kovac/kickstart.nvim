@@ -245,6 +245,7 @@ require('lazy').setup({
   'tpope/vim-fugitive',
   'christoomey/vim-tmux-navigator',
   'mbbill/undotree',
+  'nvim-treesitter/nvim-treesitter-context',
   {
     'stevearc/oil.nvim',
     opts = {},
