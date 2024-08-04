@@ -224,11 +224,14 @@ vim.api.nvim_create_autocmd('BufEnter', {
   end,
 })
 
-vim.cmd [[
-augroup filetypedetect
-  au! BufRead,BufNewFile *.rbi                setfiletype ruby
-augroup
-]]
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  desc = 'Detect weird file types',
+  group = vim.api.nvim_create_augroup('filetypedetect', { clear = true }),
+  pattern = '*.rbi',
+  callback = function()
+    vim.bo.filetype = 'ruby'
+  end,
+})
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
