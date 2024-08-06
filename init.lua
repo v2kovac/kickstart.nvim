@@ -638,6 +638,7 @@ require('lazy').setup({
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
         --
+        jdtls = {},
         ruby_lsp = {
           root_dir = require('lspconfig.util').root_pattern('.env', 'Gemfile', '.git'),
         },
