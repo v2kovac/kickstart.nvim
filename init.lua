@@ -188,7 +188,7 @@ require('lazy').setup({
     config = function()
       vim.keymap.set('i', '<C-j>', 'copilot#Accept("\\<CR>")', { expr = true, replace_keycodes = false })
       vim.keymap.set('i', '<C-w>', '<Plug>(copilot-accept-word)')
-      vim.keymap.set('i', '<C-l>', '<Plug>(copilot-accept-line)')
+      -- vim.keymap.set('i', '<C-l>', '<Plug>(copilot-accept-line)')
     end,
   },
   {
@@ -308,37 +308,15 @@ require('lazy').setup({
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
-      -- Telescope is a fuzzy finder that comes with a lot of different things that
-      -- it can fuzzy find! It's more than just a "file finder", it can search
-      -- many different aspects of Neovim, your workspace, LSP, and more!
-      --
-      -- The easiest way to use Telescope, is to start by doing something like:
-      --  :Telescope help_tags
-      --
-      -- After running this command, a window will open up and you're able to
-      -- type in the prompt window. You'll see a list of `help_tags` options and
-      -- a corresponding preview of the help.
-      --
-      -- Two important keymaps to use while in Telescope are:
-      --  - Insert mode: <c-/>
-      --  - Normal mode: ?
-      --
-      -- This opens a window that shows you all of the keymaps for the current
-      -- Telescope picker. This is really useful to discover what Telescope can
-      -- do as well as how to actually do it!
-
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        pickers = {
+          find_files = {
+            follow = true,
+            no_ignore = true
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -397,6 +375,17 @@ require('lazy').setup({
       'williamboman/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
+      -- amazon
+      'mfussenegger/nvim-jdtls',
+      {
+        url = "vkovac@git.amazon.com:pkg/NinjaHooks",
+        branch = "mainline",
+        lazy = false,
+        config = function(plugin)
+          vim.opt.rtp:prepend(plugin.dir .. "/configuration/vim/amazon/brazil-config")
+        end,
+      },
+
       -- Useful status updates for LSP.
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
       { 'j-hui/fidget.nvim', opts = {} },
@@ -416,35 +405,30 @@ require('lazy').setup({
       { 'Bilal2453/luvit-meta', lazy = true },
     },
     config = function()
-      -- Brief aside: **What is LSP?**
-      --
-      -- LSP is an initialism you've probably heard, but might not understand what it is.
-      --
-      -- LSP stands for Language Server Protocol. It's a protocol that helps editors
-      -- and language tooling communicate in a standardized fashion.
-      --
-      -- In general, you have a "server" which is some tool built to understand a particular
-      -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc.). These Language Servers
-      -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
-      -- processes that communicate with some "client" - in this case, Neovim!
-      --
-      -- LSP provides Neovim with features like:
-      --  - Go to definition
-      --  - Find references
-      --  - Autocompletion
-      --  - Symbol Search
-      --  - and more!
-      --
-      -- Thus, Language Servers are external tools that must be installed separately from
-      -- Neovim. This is where `mason` and related plugins come into play.
-      --
-      -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
-      -- and elegantly composed help section, `:help lsp-vs-treesitter`
+      -- amazon
+      local configs = require("lspconfig.configs")
+      local lspconfig = require('lspconfig')
+      vim.filetype.add({
+        filename = {
+          ['Config'] = function()
+            vim.b.brazil_package_Config = 1
+            return 'brazil-config'
+          end,
+        }
+      })
+      configs.barium = {
+        default_config = {
+          cmd = {'barium'};
+          filetypes = {'brazil-config'};
+          root_dir = function(fname)
+            return lspconfig.util.find_git_ancestor(fname)
+          end;
+          settings = {};
+        }
+      }
+      lspconfig.barium.setup({})
 
-      --  This function gets run when an LSP attaches to a particular buffer.
-      --    That is to say, every time a new file is opened that is associated with
-      --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
-      --    function will be executed to configure the current buffer
+      -- generic lsp config goto definition etc
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -553,12 +537,15 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         jdtls = {},
-        ruby_lsp = {
-          root_dir = require('lspconfig.util').root_pattern('.env', 'Gemfile', '.git'),
+        smithy_ls = {
         },
-        sorbet = {
-          root_dir = require('lspconfig.util').root_pattern('.env', 'Gemfile', '.git'),
-        },
+
+        -- ruby_lsp = {
+        --   root_dir = require('lspconfig.util').root_pattern('.env', 'Gemfile', '.git'),
+        -- },
+        -- sorbet = {
+        --   root_dir = require('lspconfig.util').root_pattern('.env', 'Gemfile', '.git'),
+        -- },
 
         lua_ls = {
           -- cmd = {...},
@@ -589,6 +576,8 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'prettierd',
+        'eslint_d'
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -602,6 +591,7 @@ require('lazy').setup({
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
+          ['jdtls'] = function() end,
         },
       }
     end,
@@ -638,15 +628,10 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use a sub-list to tell conform to run *until* a formatter
-        -- is found.
-        javascript = { { 'prettierd', 'prettier' } },
-        typescript = { { 'prettierd', 'prettier' } },
-        javascriptreact = { { 'prettierd', 'prettier' } },
-        typescriptreact = { { 'prettierd', 'prettier' } },
+        javascript = { 'prettierd', 'eslint_d' },
+        typescript = { 'eslint_d' },
+        javascriptreact = { 'eslint_d' },
+        typescriptreact = { 'prettierd', 'eslint_d' },
       },
     },
   },
@@ -739,11 +724,11 @@ require('lazy').setup({
           --
           -- <c-l> will move you to the right of each of the expansion locations.
           -- <c-h> is similar, except moving you backwards.
-          -- ['<C-l>'] = cmp.mapping(function()
-          --   if luasnip.expand_or_locally_jumpable() then
-          --     luasnip.expand_or_jump()
-          --   end
-          -- end, { 'i', 's' }),
+          ['<C-l>'] = cmp.mapping(function()
+            if luasnip.expand_or_locally_jumpable() then
+              luasnip.expand_or_jump()
+            end
+          end, { 'i', 's' }),
           ['<C-h>'] = cmp.mapping(function()
             if luasnip.locally_jumpable(-1) then
               luasnip.jump(-1)
@@ -853,14 +838,14 @@ require('lazy').setup({
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'ruby' },
       -- Autoinstall languages that are not installed
       auto_install = true,
-      -- highlight = {
-      --   enable = true,
-      --   -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-      --   --  If you are experiencing weird indenting issues, add the language to
-      --   --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-      --   additional_vim_regex_highlighting = { 'ruby' },
-      -- },
-      -- indent = { enable = true, disable = { 'ruby' } },
+      highlight = {
+        enable = true,
+        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+        --  If you are experiencing weird indenting issues, add the language to
+        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
+        additional_vim_regex_highlighting = { 'ruby' },
+      },
+      indent = { enable = true, disable = { 'ruby' } },
       -- indent = { enable = true },
     },
     config = function(_, opts)
