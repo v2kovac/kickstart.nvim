@@ -24,10 +24,11 @@ vim.opt.mouse = 'a'
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
 
--- Sync clipboard between OS and Neovim.
---  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
 vim.opt.clipboard = 'unnamedplus'
+-- Copy to System Clipboard
+vim.keymap.set("n", "<leader>y", "\"+y")
+vim.keymap.set("v", "<leader>y", "\"+y")
 
 -- Enable break indent
 vim.opt.breakindent = true
@@ -151,7 +152,12 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
     vim.bo.filetype = 'ruby'
   end,
 })
-
+vim.api.nvim_create_autocmd("VimEnter", {
+  pattern = "*",
+  callback = function()
+    vim.opt.shell = "/bin/zsh -i"
+  end
+})
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -180,17 +186,8 @@ require('lazy').setup({
   'tpope/vim-fugitive',
   'christoomey/vim-tmux-navigator',
   'mbbill/undotree',
-  'nvim-treesitter/nvim-treesitter-context',
+  { 'nvim-treesitter/nvim-treesitter-context', opts = { multiline_threshold = 1 } },
   { 'tpope/vim-endwise', ft = { 'ruby', 'eruby' } },
-  {
-    'github/copilot.vim',
-    opts = {},
-    config = function()
-      vim.keymap.set('i', '<C-j>', 'copilot#Accept("\\<CR>")', { expr = true, replace_keycodes = false })
-      vim.keymap.set('i', '<C-w>', '<Plug>(copilot-accept-word)')
-      -- vim.keymap.set('i', '<C-l>', '<Plug>(copilot-accept-line)')
-    end,
-  },
   {
     'stevearc/oil.nvim',
     opts = {},
@@ -311,6 +308,17 @@ require('lazy').setup({
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
+        defaults = {
+          mappings = {
+            n = {
+              ["p"] = function(prompt_bufnr)
+                local current_picker = require("telescope.actions.state").get_current_picker(prompt_bufnr)
+                local text = vim.fn.getreg('+'):gsub("\n", "\\n") -- which register depends on clipboard option
+                current_picker:set_prompt(text, false)
+              end,
+            },
+          },
+        },
         pickers = {
           find_files = {
             follow = true,
@@ -577,7 +585,6 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'prettierd',
-        'eslint_d'
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -629,8 +636,8 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         javascript = { 'prettierd', 'eslint_d' },
-        typescript = { 'eslint_d' },
-        javascriptreact = { 'eslint_d' },
+        typescript = { 'prettierd', 'eslint_d' },
+        javascriptreact = { 'prettierd', 'eslint_d' },
         typescriptreact = { 'prettierd', 'eslint_d' },
       },
     },
@@ -752,30 +759,6 @@ require('lazy').setup({
     end,
   },
 
-  -- { -- You can easily change to a different colorscheme.
-  --   -- Change the name of the colorscheme plugin below, and then
-  --   -- change the command in the config to whatever the name of that colorscheme is.
-  --   --
-  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  --   'rose-pine/neovim',
-  --   name = 'rose-pine',
-  --   -- 'tjdevries/colorbuddy.nvim',
-  --   -- name = 'colorbuddy',
-  --   priority = 1000, -- Make sure to load this before all the other start plugins.
-  --   lazy = false,
-  --   init = function()
-  --     -- Load the colorscheme here.
-  --     -- Like many other themes, this one has different styles, and you could load
-  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  --     -- vim.cmd.colorscheme 'gruvbuddy'
-  --     vim.cmd.colorscheme 'rose-pine'
-  --     vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
-  --     vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
-  --
-  --     -- You can configure highlights by doing something like:
-  --     vim.cmd.hi 'Comment gui=none'
-  --   end,
-  -- },
   {
     'AlexvZyl/nordic.nvim',
     lazy = false,
@@ -786,10 +769,34 @@ require('lazy').setup({
         telescope = {
           style = 'classic',
         },
+        cursorline = {
+          blend = 1,
+        },
       }
       vim.cmd.colorscheme 'nordic'
     end,
   },
+  -- Tsoding color theme
+  -- {
+  --   "blazkowolf/gruber-darker.nvim",
+  --   lazy = false,
+  --   priority = 1000,
+  --   config = function()
+  --     vim.cmd.colorscheme 'gruber-darker'
+  --   end,
+  -- },
+  -- {
+  --   'thimc/gruber-darker.nvim',
+  --   config = function()
+  --     require('gruber-darker').setup({
+  --       -- OPTIONAL
+  --       -- transparent = true, -- removes the background
+  --       -- underline = false, -- disables underline fonts
+  --       -- bold = false, -- disables bold fonts
+  --     })
+  --     vim.cmd.colorscheme('gruber-darker')
+  --   end,
+  -- },
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },

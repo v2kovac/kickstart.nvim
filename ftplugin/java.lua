@@ -81,10 +81,8 @@ local config = {
         "-Xmx1g",
         "-javaagent:" .. path_to_lombok,
         "--add-modules=ALL-SYSTEM",
-        "--add-opens",
-        "java.base/java.util=ALL-UNNAMED",
-        "--add-opens",
-        "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
 
         "-jar",
         path_to_jar,
@@ -137,3 +135,7 @@ local config = {
 
 jdtls.start_or_attach(config)
 
+vim.opt_local.shiftwidth = 4
+vim.opt_local.tabstop = 4
+vim.opt_local.expandtab = true
+vim.b.sleuth_automatic = 0
